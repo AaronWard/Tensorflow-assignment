@@ -14,7 +14,6 @@ import numpy as np
 Hyper parameters for fine tuning the network
 
 '''
-
 # Number of training or evaluation examples
 NUM_EXAMPLES = 500
  # Number of inputs
@@ -27,6 +26,7 @@ NUM_HIDDEN = 3
 LEARNING_RATE = 0.01
 # Number of iterations of traversing through the data
 NUM_EPOCHS = 10000
+
 ########################################################################################
 '''
 Basic data retrieval and sorting into lists 
@@ -40,24 +40,12 @@ MODEL_PATH = 'data/trained_model.ckpt'
 x = []
 y = []
 
-test_x = []
-test_y = []
-
 # import training data
 file  = open(TRAIN_DATA, "r")
 input_data = csv.reader(file, delimiter=',')
 for row in input_data:
     x.append([float(row[0]), float(row[1])])
     y.append([float(row[2])])
-
-tfile  = open(TEST_DATA, "r")
-input_test = csv.reader(tfile, delimiter=',')
-for row in input_test:
-    test_x.append([float(row[0]), float(row[1])])
-    test_y.append([float(row[2])])
-
-# test_x = np.array(test_x)
-# test_y = np.array(test_y)
 
 ########################################################################################
 '''
@@ -94,11 +82,10 @@ Define cost and optimization function for training
 the network.
 
 '''
+
 # Predicted output - expected output
 cost = tf.reduce_sum(tf.square(output_layer - y_))
 optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE).minimize(cost)
-
-
 
 ########################################################################################
 '''
@@ -109,28 +96,27 @@ with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
     saver = tf.train.Saver()
 
-    correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
-    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+    correct = tf.equal(tf.argmax(output_layer, 1), tf.argmax(y, 1))
+    accuracy = tf.reduce_mean(tf.cast(correct, 'float'))
 
-    error = 0.0
+    error = 0
     interval = 100
     t_start = time.clock()
+
     # Feed the values into the network
-    for epoch in range(NUM_EPOCHS):
-        sess.run(optimizer, feed_dict={x_: x, y_: y})
+    for epoch in range(0, NUM_EPOCHS):
+        op, acc, ol, c = sess.run([optimizer, accuracy,output_layer, cost], feed_dict={x_: x, y_: y})
 
         if epoch % interval == 0:
-            op, acc, ol, c = sess.run([optimizer, accuracy, output_layer, cost], feed_dict={x_: x, y_: y})
+            # op, ol, c = sess.run([optimizer,output_layer, cost], feed_dict={x_: x, y_: y})
             for i in range(len(ol)):
                     error = abs(ol[i] - y[i])
-
-            print('Epoch: ', epoch,'Accuracy: ', acc, ' - Cost: ', c,' - Error: ', error)
-    ##########
+            print('Epoch: ', epoch,' - Accuracy: ', acc, ' - Cost: ', c,' - Error: ', error)
 
     t_end = time.clock()
-    print('\n############### FINAL #################')
+    print('\n########################### FINAL RESULT ##################################')
     print('Cost: ', c,' - Error: ', error, ' - Elapsed time: ', t_end - t_start)
-    print('#######################################\n')
+    print('###########################################################################\n')
 
     #Save the model to disk
     # save_path = saver.save(sess, MODEL_PATH)
