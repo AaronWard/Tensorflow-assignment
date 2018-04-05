@@ -12,31 +12,36 @@ import numpy as np
 ########################################################################################
 '''
 Hyper parameters for fine tuning the network
+
 '''
 
 # Number of training or evaluation examples
-NUM_EXAMPLES = 500 
+NUM_EXAMPLES = 500
  # Number of inputs
 NUM_INPUTS = 2
 # Number of output features or class labels
 NUM_LABELS = 1	
 # Number of hidden/middle layer nodes
-NUM_HIDDEN = 3 
+NUM_HIDDEN = 3
 # tells the optimizer how far to move the weights in the direction of the gradient
-LEARNING_RATE = 0.0001
+LEARNING_RATE = 0.01
 # Number of iterations of traversing through the data
-NUM_EPOCHS = 10000 
+NUM_EPOCHS = 10000
 ########################################################################################
 '''
 Basic data retrieval and sorting into lists 
 
 '''
 TRAIN_DATA = 'data/train.csv'
+TEST_DATA = 'data/eval.csv'
 MODEL_PATH = 'data/trained_model.ckpt'
 
 #input features and labels lists
 x = []
 y = []
+
+test_x = []
+test_y = []
 
 # import training data
 file  = open(TRAIN_DATA, "r")
@@ -45,8 +50,14 @@ for row in input_data:
     x.append([float(row[0]), float(row[1])])
     y.append([float(row[2])])
 
-# print('Training data', x)
-# print('Label', y)
+tfile  = open(TEST_DATA, "r")
+input_test = csv.reader(tfile, delimiter=',')
+for row in input_test:
+    test_x.append([float(row[0]), float(row[1])])
+    test_y.append([float(row[2])])
+
+# test_x = np.array(test_x)
+# test_y = np.array(test_y)
 
 ########################################################################################
 '''
@@ -60,18 +71,21 @@ y_ = tf.placeholder(tf.float32, shape=[NUM_EXAMPLES, NUM_LABELS])
 
 weights = {
     #                       2 inputs, 2 hidden layer nodes
-    'w_1': tf.Variable(tf.random_uniform([NUM_INPUTS, NUM_HIDDEN], -1, 1)), 
-    'w_2': tf.Variable(tf.random_uniform([NUM_HIDDEN, NUM_LABELS], -1, 1))
+    'w_1': tf.Variable(tf.random_uniform([NUM_INPUTS, NUM_HIDDEN], -1, 1)),
+    # 'w_2': tf.Variable(tf.random_uniform([NUM_HIDDEN, NUM_HIDDEN], -1, 1)),  
+    'out': tf.Variable(tf.random_uniform([NUM_HIDDEN, NUM_LABELS], -1, 1))
 }
 
 biases = {
     #                       2 hidden
-    'b_1': tf.Variable(tf.random_normal([NUM_HIDDEN])),
-    'b_2': tf.Variable(tf.random_normal([NUM_LABELS]))
+    'b_1': tf.Variable(tf.zeros([NUM_HIDDEN])),
+    # 'b_2': tf.Variable(tf.random_normal([NUM_HIDDEN])),
+    'out': tf.Variable(tf.zeros([NUM_LABELS]))
 }
 
 layer_1 = tf.sigmoid(tf.matmul(x_, weights['w_1']) + biases['b_1'])
-output_layer = tf.sigmoid(tf.matmul(layer_1, weights['w_2']) + biases['b_2'])
+# layer_2 = tf.sigmoid(tf.matmul(layer_1, weights['w_2']) + biases['b_2'])
+output_layer = tf.sigmoid(tf.matmul(layer_1, weights['out']) + biases['out'])
 
 
 ########################################################################################
@@ -84,44 +98,40 @@ the network.
 cost = tf.reduce_sum(tf.square(output_layer - y_))
 optimizer = tf.train.GradientDescentOptimizer(LEARNING_RATE).minimize(cost)
 
+
+
 ########################################################################################
 '''
 Run a tensorflow session and print the metrics to the console
 
 '''
-saver = tf.train.Saver()
-
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    
-    t_start = time.clock()
-    error = 0
+    saver = tf.train.Saver()
+
+    correct_prediction = tf.equal(tf.argmax(y,1), tf.argmax(y_,1))
+    accuracy = tf.reduce_mean(tf.cast(correct_prediction, "float"))
+
+    error = 0.0
     interval = 100
+    t_start = time.clock()
     # Feed the values into the network
     for epoch in range(NUM_EPOCHS):
-        op, ol, c = sess.run([optimizer, output_layer, cost], feed_dict={x_: x, y_: y})
+        sess.run(optimizer, feed_dict={x_: x, y_: y})
+
         if epoch % interval == 0:
+            op, acc, ol, c = sess.run([optimizer, accuracy, output_layer, cost], feed_dict={x_: x, y_: y})
             for i in range(len(ol)):
-                    error = abs(ol[i] - y[i])    
-            print('Epoch : ', epoch, " - Cost: ", c, " - Error: ", error)
+                    error = abs(ol[i] - y[i])
 
+            print('Epoch: ', epoch,'Accuracy: ', acc, ' - Cost: ', c,' - Error: ', error)
+    ##########
 
-
-    #Print the elapse time
     t_end = time.clock()
-    print('Elapsed time: ', t_end - t_start)
+    print('\n############### FINAL #################')
+    print('Cost: ', c,' - Error: ', error, ' - Elapsed time: ', t_end - t_start)
+    print('#######################################\n')
 
     #Save the model to disk
-    save_path = saver.save(sess, MODEL_PATH)
-    print("Model saved in file: " , save_path)
-
-
-
-
-            # for i in range(len(ol)):
-        #     if epoch % interval == 0:
-        #         error = abs(ol[i] - y[i])
-
-        
-        # print('Epoch : ', epoch, " - Cost: ", c, " - Error: ", error)
-        # print('Epoch : ', epoch, " - Cost: ", c, " - Error: ", error)
+    # save_path = saver.save(sess, MODEL_PATH)
+    # print("Model saved in file: " , save_path)
