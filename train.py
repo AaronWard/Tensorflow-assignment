@@ -119,5 +119,7 @@ with tf.Session() as sess:
     print('###########################################################################\n')
 
     #Save the model to disk
-    # save_path = saver.save(sess, MODEL_PATH)
-    # print("Model saved in file: " , save_path)
+    if error <= 0.01:
+        save_path = saver.save(sess, MODEL_PATH)
+        print("Model saved in file: " , save_path)
+ 
