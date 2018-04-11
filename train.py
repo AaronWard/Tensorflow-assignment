@@ -22,11 +22,11 @@ NUM_INPUTS = 2
 NUM_LABELS = 1	
 
 
-# Number of hidden/middle layer nodes 8
+# Number of hidden/middle layer nodes 
 NUM_HIDDEN = 8
 # tells the optimizer how far to move the weights in the direction of the gradient
 LEARNING_RATE = 0.01
-# Number of iterations of traversing through the data 5000
+# Number of iterations of traversing through the data
 NUM_EPOCHS = 5000
 
 ###################################################################################################
